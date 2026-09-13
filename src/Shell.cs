@@ -1937,6 +1937,8 @@ namespace ElizaApp
 
         void Installed(string fetched, string trouble)
         {
+            Updater.Note(trouble == null ? "downloaded " + fetched
+                                         : "download failed: " + trouble);
             if (IsDisposed) return;
             if (trouble == null) trouble = Updater.Swap(fetched);
             if (trouble != null)

@@ -175,11 +175,39 @@ namespace ElizaApp
 
             Written as a batch rather than done here for the obvious reason:
             the program cannot replace itself while it is the thing running. */
+        /*  A line in a log beside the program.
+
+            A swap that fails looks exactly like a swap that worked: the
+            program closes, and it opens again in the version it was. Without
+            somewhere to write down which of the two happened there is nothing
+            to look at afterwards. */
+        public static void Note(string what)
+        {
+            try
+            {
+                File.AppendAllText(Path.Combine(Path.GetTempPath(), "eliza-update.log"),
+                    DateTime.Now.ToString("HH:mm:ss") + "  " + what + Environment.NewLine);
+            }
+            catch { }
+        }
+
         public static string Swap(string fetched)
         {
             try
             {
-                string mine = System.Reflection.Assembly.GetExecutingAssembly().Location;
+                /*  Every path in short form, wherever Windows has one.
+
+                    A batch file is read by cmd in the console's code page,
+                    and this machine's own home folder is spelled in Hebrew.
+                    Written in one code page and read in another, every path
+                    in the script came out as something that does not exist,
+                    and the swap failed in silence -- on the machine of the
+                    person it was written for. An 8.3 name is ASCII whatever
+                    the folder is called. The file is written as UTF-8 with no
+                    mark and chcp 65001 in front of it as well, for the
+                    volumes where short names are turned off. */
+                string mine = Short(System.Reflection.Assembly.GetExecutingAssembly().Location);
+                fetched = Short(fetched);
                 string old = mine + ".old";
                 int who = System.Diagnostics.Process.GetCurrentProcess().Id;
                 string bat = Path.Combine(Path.GetTempPath(), "eliza-update.cmd");
@@ -192,11 +220,14 @@ namespace ElizaApp
                     "for($i=0;$i -lt 60 -and (Get-Process -Id " + who + ");$i++)" +
                     "{Start-Sleep -Milliseconds 250}\"");
                 script.AppendLine("ping -n 2 127.0.0.1 >nul");
+                string log = Short(Path.GetTempPath()) + "eliza-update.log";
+                script.AppendLine("echo the batch woke up >> \"" + log + "\"");
                 script.AppendLine("del \"" + old + "\" >nul 2>&1");
                 script.AppendLine("move /y \"" + mine + "\" \"" + old + "\" >nul");
-                script.AppendLine("if errorlevel 1 goto sorry");
+                script.AppendLine("if errorlevel 1 (echo could not move the old one aside >> \"" + log + "\" & goto sorry)");
                 script.AppendLine("move /y \"" + fetched + "\" \"" + mine + "\" >nul");
-                script.AppendLine("if errorlevel 1 goto putback");
+                script.AppendLine("if errorlevel 1 (echo could not move the new one in >> \"" + log + "\" & goto putback)");
+                script.AppendLine("echo swapped >> \"" + log + "\"");
                 script.AppendLine("start \"\" \"" + mine + "\"");
                 script.AppendLine("ping -n 3 127.0.0.1 >nul");
                 script.AppendLine("del \"" + old + "\" >nul 2>&1");
@@ -208,16 +239,36 @@ namespace ElizaApp
                 script.AppendLine("start \"\" \"" + mine + "\"");
                 script.AppendLine("del \"%~f0\"");
 
-                File.WriteAllText(bat, script.ToString(), Encoding.Default);
+                File.WriteAllText(bat, script.ToString(), new UTF8Encoding(false));
+                bat = Short(bat);
 
                 var go = new System.Diagnostics.ProcessStartInfo("cmd.exe", "/c \"" + bat + "\"");
                 go.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
                 go.CreateNoWindow = true;
                 go.UseShellExecute = false;
                 System.Diagnostics.Process.Start(go);
+                Note("batch started: " + bat);
                 return null;
             }
-            catch (Exception ex) { return ex.Message; }
+            catch (Exception ex) { Note("swap failed: " + ex.Message); return ex.Message; }
+        }
+
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet =
+            System.Runtime.InteropServices.CharSet.Unicode)]
+        static extern int GetShortPathNameW(string from, StringBuilder into, int size);
+
+        /*  The 8.3 name, when the volume has one. Only for a path that
+            exists: Windows has nothing to shorten otherwise. */
+        static string Short(string path)
+        {
+            try
+            {
+                var got = new StringBuilder(600);
+                int n = GetShortPathNameW(path, got, got.Capacity);
+                if (n > 0 && n < got.Capacity) return got.ToString();
+            }
+            catch { }
+            return path;
         }
 
         /*  One field out of the answer, without a JSON library.
