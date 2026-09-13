@@ -1,0 +1,75 @@
+# The same conversations as build/talks.he.txt, in English, for the 1966
+# script to answer. Run both and compare:
+#
+#   ElizaTest --talks doctor.txt    build/talks.en.txt
+#   ElizaTest --talks doctor.he.txt build/talks.he.txt
+#
+# The point is not that the English reads better. It is to find out whether a
+# place where the Hebrew falls flat is a fault of the Hebrew script or a thing
+# ELIZA never did.
+
+=== the short answers that sound stupid
+everything
+everything bothers me
+i am tired
+a lot
+i don't know
+sure
+whatever
+nothing
+
+=== family
+hello
+my mother is angry with me all the time
+she says i don't try hard enough
+i try but it is never enough
+my father does not get involved
+he just keeps quiet
+i was afraid of him when i was small
+i am not afraid any more
+but something stayed
+i don't know how to explain it
+it is like a connection that broke
+maybe i am exaggerating
+
+=== work
+work is hard for me
+my manager does not trust me
+i tried to talk to him
+he did not listen
+i feel invisible there
+every day i wake up heavy
+i thought about quitting
+but i need the money
+my wife says i should stay
+she does not understand how it wears me down
+i am not sure i can go on
+
+=== grief
+my mother died last year
+i did not get to say goodbye
+i was at work when it happened
+i can't stop thinking about it
+i dreamed about her yesterday
+she said nothing in the dream
+i woke up and cried
+i miss her
+
+=== a scene
+i killed someone
+the body is in the car
+nobody knows
+i was very afraid
+i ran away
+i have not slept since
+what am i supposed to do now
+
+=== probing her
+who are you
+what do you do
+are you a psychologist
+do you understand me at all
+you are just a program
+so why am i talking to you
+can you help me
+what is your name
