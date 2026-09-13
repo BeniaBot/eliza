@@ -270,20 +270,20 @@ namespace ElizaApp
                                           "Levenim MT", "Narkisim", "David" })
                     : "Segoe Script";
 
-                float points = 11f * u;
+                float points = 11f;
                 Font f = null;
                 try
                 {
-                    while (points > 5f * u)
+                    while (points > 5f)
                     {
                         f = new Font(face, points, FontStyle.Bold);
                         var size = g.MeasureString(words, f, int.MaxValue, fmt);
                         if (size.Width <= box.Width - r * 1.7f) break;
                         f.Dispose();
                         f = null;
-                        points -= 0.5f * u;
+                        points -= 0.5f;
                     }
-                    if (f == null) f = new Font(face, 5f * u, FontStyle.Bold);
+                    if (f == null) f = new Font(face, 5f, FontStyle.Bold);
                     // Inside the flowers, not under them.
                     g.DrawString(words, f, b,
                         RectangleF.Inflate(box, -r * 0.85f, 0), fmt);

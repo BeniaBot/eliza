@@ -363,7 +363,7 @@ namespace ElizaApp
             font handles, at the rate the mouse moves. */
         Font Face(float points, FontStyle style)
         {
-            return Fonts.Get(points * scale, style);
+            return Fonts.Get(points, style);
         }
 
         void Add(Rectangle where, Action what)
@@ -571,7 +571,7 @@ namespace ElizaApp
             var note = new Label
             {
                 Text = Say.OursModels + " — " + Say.NoteModels,
-                Font = Fonts.Get(9.5f * scale, FontStyle.Regular),
+                Font = Fonts.Get(9.5f, FontStyle.Regular),
                 ForeColor = Theme.Muted,
                 BackColor = Theme.Back,
                 AutoSize = false,
@@ -1123,7 +1123,7 @@ namespace ElizaApp
             var l = new Label
             {
                 Text = text,
-                Font = Fonts.Get(18f * scale, FontStyle.Bold),
+                Font = Fonts.Get(18f, FontStyle.Bold),
                 ForeColor = Theme.Text,
                 BackColor = Theme.Back,
                 AutoSize = false,
@@ -1229,7 +1229,7 @@ namespace ElizaApp
                 var none = new Label
                 {
                     Text = Say.NoTranscripts,
-                    Font = Fonts.Get(10f * scale, FontStyle.Regular),
+                    Font = Fonts.Get(10f, FontStyle.Regular),
                     ForeColor = Theme.Muted,
                     BackColor = Theme.Back,
                     AutoSize = false,
@@ -1445,7 +1445,7 @@ namespace ElizaApp
             {
                 BackColor = Theme.Panel,
                 ForeColor = Theme.Text,
-                Font = Fonts.Get(10.5f * scale, FontStyle.Regular),
+                Font = Fonts.Get(10.5f, FontStyle.Regular),
                 /*  Short to begin with. ContentsResized reports the height
                     the content needs but never less than the control already
                     is, so starting it tall left the card padded with empty

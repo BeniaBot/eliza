@@ -157,7 +157,7 @@ namespace ElizaApp
                                           string face, float u, float points, float pad)
         {
             float wide;
-            using (var f = new Font(face, points * u, FontStyle.Bold))
+            using (var f = new Font(face, points, FontStyle.Bold))
                 wide = g.MeasureString(words, f).Width + pad * u;
             wide = Math.Min(box.Width, Math.Max(box.Width * 0.28f, wide));
             return new RectangleF(box.X + (box.Width - wide) / 2f, box.Y,
@@ -179,20 +179,20 @@ namespace ElizaApp
                    })
             using (var b = new SolidBrush(ink))
             {
-                float size = points * u;
+                float size = points;
                 Font f = null;
                 try
                 {
-                    while (size > 5f * u)
+                    while (size > 5f)
                     {
                         f = new Font(face, size, FontStyle.Bold);
                         if (g.MeasureString(words, f, int.MaxValue, fmt).Width
                             <= box.Width - 8 * u) break;
                         f.Dispose();
                         f = null;
-                        size -= 0.5f * u;
+                        size -= 0.5f;
                     }
-                    if (f == null) f = new Font(face, 5f * u, FontStyle.Bold);
+                    if (f == null) f = new Font(face, 5f, FontStyle.Bold);
                     g.DrawString(words, f, b, box, fmt);
                 }
                 finally { if (f != null) f.Dispose(); }

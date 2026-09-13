@@ -1765,11 +1765,11 @@ namespace ElizaApp
                 using (var b = new SolidBrush(palette.Normal))
                 using (var path = Rounded(mark, S(5)))
                     g.FillPath(b, path);
-                using (var f = new Font("Consolas", 7f * scale, FontStyle.Bold))
+                using (var f = new Font("Consolas", 7f, FontStyle.Bold))
                     TextRenderer.DrawText(g, ">_", f, mark, palette.Screen,
                         TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
                         TextFormatFlags.NoPadding);
-                using (var f = new Font("Segoe UI Semibold", 9.5f * scale))
+                using (var f = new Font("Segoe UI Semibold", 9.5f))
                     TextRenderer.DrawText(g, "ELIZA", f,
                         new Rectangle(mark.Right + S(9), pad + S(6), S(120), S(19)),
                         Color.FromArgb(216, 222, 230),
@@ -1782,7 +1782,7 @@ namespace ElizaApp
                 // for the sign has no title -- rather than the engraved name
                 // from a plastic case that this style does not have, drawn
                 // over the top of the chat box.
-                using (var f = new Font("Segoe UI", 9.5f * scale, FontStyle.Bold))
+                using (var f = new Font("Segoe UI", 9.5f, FontStyle.Bold))
                 using (var b = new SolidBrush(Engraved))
                     g.DrawString("E L I Z A", f, b, pad + S(20), pad + S(7));
             }
@@ -1799,7 +1799,7 @@ namespace ElizaApp
                               Rtl ? pad : ClientSize.Width - pad,
                               ClientSize.Height - S(Footer) + S(4), Rtl);
 
-            using (var f = new Font("Segoe UI", 7.5f * scale))
+            using (var f = new Font("Segoe UI", 7.5f))
             using (var b = new SolidBrush(Etched))
             {
                 // Only the console of 1966 carries the maker's name, because
@@ -1889,8 +1889,8 @@ namespace ElizaApp
         {
             var flags = TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix |
                         (Rtl ? TextFormatFlags.RightToLeft : TextFormatFlags.Default);
-            using (var f = new Font("Segoe UI", 7.5f * scale))
-            using (var chosen = new Font("Segoe UI", 7.5f * scale, FontStyle.Bold))
+            using (var f = new Font("Segoe UI", 7.5f))
+            using (var chosen = new Font("Segoe UI", 7.5f, FontStyle.Bold))
             {
                 var widths = new int[names.Length];
                 int total = 0, gap = S(13);
@@ -1919,11 +1919,22 @@ namespace ElizaApp
                     the far left and the last at the right, which is backwards.
                     The rectangles stay keyed to the logical index, so clicking
                     and the keys are untouched. */
+                /*  As tall as the letters actually are.
+
+                    Fifteen was measured once, on a screen at 100 per
+                    cent, against words that sit on the line. A Hebrew
+                    ק or ן hangs below it, and a rectangle that is too
+                    short does not overflow -- it cuts. On a screen at
+                    150 per cent "ענבר" came back reading "עורר".  */
+                int tall = Math.Max(S(15), TextRenderer.MeasureText(
+                    g, "ןקp", chosen, new Size(int.MaxValue, int.MaxValue),
+                    flags).Height);
+
                 var mouse = PointToClient(MousePosition);
                 for (int k = 0; k < names.Length; k++)
                 {
                     int i = Rtl ? names.Length - 1 - k : k;
-                    var box = new Rectangle(x, top, widths[i], S(15));
+                    var box = new Rectangle(x, top, widths[i], tall);
                     // The word is what is drawn; what answers the click is a
                     // little larger than the word, because 20 by 15 pixels is
                     // not a target.
@@ -1950,7 +1961,7 @@ namespace ElizaApp
                     if (k < names.Length - 1)
                     {
                         TextRenderer.DrawText(g, "·", f,
-                            new Rectangle(x, top, gap, S(15)), Etched,
+                            new Rectangle(x, top, gap, tall), Etched,
                             flags | TextFormatFlags.HorizontalCenter);
                         x += gap;
                     }

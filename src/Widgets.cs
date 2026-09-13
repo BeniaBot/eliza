@@ -559,7 +559,7 @@ namespace ElizaApp
 
         protected Font Face(float points, FontStyle style)
         {
-            return Fonts.Get(points * Zoom, style);
+            return Fonts.Get(points, style);
         }
     }
 
@@ -568,7 +568,18 @@ namespace ElizaApp
         A Font is a handle to a GDI object, and the old code built one for
         every line of every paragraph on every frame. They are shared now and
         live as long as the program does, which is the right lifetime for a
-        thing there are fourteen distinct values of. */
+        thing there are fourteen distinct values of.
+
+        The sizes asked for here are points, and they are NOT multiplied
+        by the screen scale, however much that looks like an oversight
+        beside S(), which is. A point is a physical size: Windows turns
+        it into pixels through the screen’s own dpi, so nine points is
+        already half as tall again on a screen at 150 per cent. Scaling
+        it as well grew the letters as the square of the scale while
+        every rectangle around them grew once -- and a rectangle too
+        short for its text does not overflow, it cuts. On a machine at
+        150 per cent the words under the screen read "עורר" where the
+        program had written "ענבר". */
     /*  A model, on the page that is only models.
 
         Deliberately not the card ELIZA's own scripts sit on. They are not the
@@ -1060,10 +1071,10 @@ namespace ElizaApp
             said. */
         public void Fill(string transcript, bool rtl, float zoom)
         {
-            var hers = Fonts.Get(10.5f * zoom, FontStyle.Regular);
-            var yours = Fonts.Get(10.5f * zoom, FontStyle.Bold);
-            var banner = Fonts.Get(8.5f * zoom, FontStyle.Regular);
-            var air = Fonts.Get(4f * zoom, FontStyle.Regular);
+            var hers = Fonts.Get(10.5f, FontStyle.Regular);
+            var yours = Fonts.Get(10.5f, FontStyle.Bold);
+            var banner = Fonts.Get(8.5f, FontStyle.Regular);
+            var air = Fonts.Get(4f, FontStyle.Regular);
 
             var align = rtl ? HorizontalAlignment.Right : HorizontalAlignment.Left;
             RightToLeft = rtl ? RightToLeft.Yes : RightToLeft.No;
@@ -1634,7 +1645,7 @@ namespace ElizaApp
             int pad = S(18);
             int textW = Math.Max(S(120), width - pad * 3 - Fits(width));
             int noteH = string.IsNullOrEmpty(Note) ? 0 : TextRenderer.MeasureText(
-                g, Note, Fonts.Get(9f * Zoom, FontStyle.Regular),
+                g, Note, Fonts.Get(9f, FontStyle.Regular),
                 new Size(textW, int.MaxValue), Theme.Wrap).Height;
             return Math.Max(S(64), S(32) + noteH + S(18));
         }
@@ -1683,10 +1694,10 @@ namespace ElizaApp
                 : new Rectangle(pad, S(14), textW, S(22));
             var noteBox = new Rectangle(labelBox.X, S(36), textW, Height - S(44));
 
-            TextRenderer.DrawText(g, Label, Fonts.Get(10f * Zoom, FontStyle.Regular),
+            TextRenderer.DrawText(g, Label, Fonts.Get(10f, FontStyle.Regular),
                 labelBox, Theme.Text, Theme.Start);
             if (!string.IsNullOrEmpty(Note))
-                TextRenderer.DrawText(g, Note, Fonts.Get(9f * Zoom, FontStyle.Regular),
+                TextRenderer.DrawText(g, Note, Fonts.Get(9f, FontStyle.Regular),
                     noteBox, Theme.Faint, Theme.Wrap);
         }
 
@@ -1731,7 +1742,7 @@ namespace ElizaApp
             var g = e.Graphics;
             using (var b = new SolidBrush(Theme.Back)) g.FillRectangle(b, ClientRectangle);
             int pad = (int)Math.Round(22 * Zoom);
-            TextRenderer.DrawText(g, Label, Fonts.Get(8.5f * Zoom, FontStyle.Bold),
+            TextRenderer.DrawText(g, Label, Fonts.Get(8.5f, FontStyle.Bold),
                 new Rectangle(Theme.Mirrored ? 0 : pad, (int)(14 * Zoom),
                               Width - pad, Height - (int)(16 * Zoom)),
                 Theme.Faint, Theme.Start);
@@ -2108,14 +2119,14 @@ namespace ElizaApp
             {
                 case "chapter":
                     y += chapter > 0 ? S(34) : S(6);
-                    h = TextRenderer.MeasureText(g, text, Fonts.Get(16f * Zoom, FontStyle.Bold),
+                    h = TextRenderer.MeasureText(g, text, Fonts.Get(16f, FontStyle.Bold),
                         new Size(w, int.MaxValue), Theme.Wrap).Height;
                     p.Box = new Rectangle(S(3), y, w, h);
                     y += h + S(12);
                     break;
                 case "heading":
                     y += S(14);
-                    h = TextRenderer.MeasureText(g, text, Fonts.Get(11.5f * Zoom, FontStyle.Bold),
+                    h = TextRenderer.MeasureText(g, text, Fonts.Get(11.5f, FontStyle.Bold),
                         new Size(w, int.MaxValue), Theme.Wrap).Height;
                     p.Box = new Rectangle(S(3), y, w, h);
                     y += h + S(10);
@@ -2125,25 +2136,25 @@ namespace ElizaApp
                     the chapter is about. Every chapter has one, and a reader
                     who stops after it has still learned the thing. */
                 case "lead":
-                    h = TextRenderer.MeasureText(g, text, Fonts.Get(11.2f * Zoom, FontStyle.Regular),
+                    h = TextRenderer.MeasureText(g, text, Fonts.Get(11.2f, FontStyle.Regular),
                         new Size(w, int.MaxValue), Theme.Wrap).Height;
                     p.Box = new Rectangle(S(3), y, w, h);
                     y += h + S(18);
                     break;
                 case "quote":
-                    h = TextRenderer.MeasureText(g, text, Fonts.Get(12f * Zoom, FontStyle.Bold),
+                    h = TextRenderer.MeasureText(g, text, Fonts.Get(12f, FontStyle.Bold),
                         new Size(w - S(26), int.MaxValue), Theme.Wrap).Height;
                     p.Box = new Rectangle(S(3), y, w, h + S(14));
                     y += h + S(32);
                     break;
                 case "link":
-                    h = TextRenderer.MeasureText(g, note, Fonts.Get(8.5f * Zoom, FontStyle.Regular),
+                    h = TextRenderer.MeasureText(g, note, Fonts.Get(8.5f, FontStyle.Regular),
                         new Size(w - S(34), int.MaxValue), Theme.Wrap).Height;
                     p.Box = new Rectangle(S(3), y, w, S(32) + h + S(16));
                     y += p.Box.Height + S(10);
                     break;
                 default:
-                    h = TextRenderer.MeasureText(g, text, Fonts.Get(9.8f * Zoom, FontStyle.Regular),
+                    h = TextRenderer.MeasureText(g, text, Fonts.Get(9.8f, FontStyle.Regular),
                         new Size(w, int.MaxValue), Theme.Wrap).Height;
                     p.Box = new Rectangle(S(3), y, w, h);
                     y += h + S(14);
@@ -2203,12 +2214,12 @@ namespace ElizaApp
                             using (var pen = new Pen(Theme.Line))
                                 g.DrawLine(pen, p.Box.X, p.Box.Y - S(18),
                                            p.Box.Right, p.Box.Y - S(18));
-                        TextRenderer.DrawText(g, p.Text, Fonts.Get(16f * Zoom, FontStyle.Bold),
+                        TextRenderer.DrawText(g, p.Text, Fonts.Get(16f, FontStyle.Bold),
                             p.Box, Theme.Text, Theme.Wrap);
                         break;
 
                     case "heading":
-                        TextRenderer.DrawText(g, p.Text, Fonts.Get(11.5f * Zoom, FontStyle.Bold),
+                        TextRenderer.DrawText(g, p.Text, Fonts.Get(11.5f, FontStyle.Bold),
                             p.Box, Theme.Accent, Theme.Wrap);
                         break;
 
@@ -2217,7 +2228,7 @@ namespace ElizaApp
                             ? new Rectangle(p.Box.Right - S(3), p.Box.Y, S(3), p.Box.Height)
                             : new Rectangle(p.Box.X, p.Box.Y, S(3), p.Box.Height);
                         using (var b = new SolidBrush(Theme.Accent)) g.FillRectangle(b, bar);
-                        TextRenderer.DrawText(g, p.Text, Fonts.Get(12f * Zoom, FontStyle.Bold),
+                        TextRenderer.DrawText(g, p.Text, Fonts.Get(12f, FontStyle.Bold),
                             new Rectangle(Theme.Mirrored ? p.Box.X : p.Box.X + S(24),
                                           p.Box.Y + S(6), p.Box.Width - S(26),
                                           p.Box.Height - S(8)),
@@ -2225,7 +2236,7 @@ namespace ElizaApp
                         break;
 
                     case "lead":
-                        TextRenderer.DrawText(g, p.Text, Fonts.Get(11.2f * Zoom, FontStyle.Regular),
+                        TextRenderer.DrawText(g, p.Text, Fonts.Get(11.2f, FontStyle.Regular),
                             p.Box, Theme.Text, Theme.Wrap);
                         break;
 
@@ -2237,18 +2248,18 @@ namespace ElizaApp
                         using (var pen = new Pen(hot ? Theme.Accent : Theme.Line))
                         using (var path = Round(p.Box, S(8)))
                             g.DrawPath(pen, path);
-                        TextRenderer.DrawText(g, p.Text, Fonts.Get(9.5f * Zoom, FontStyle.Bold),
+                        TextRenderer.DrawText(g, p.Text, Fonts.Get(9.5f, FontStyle.Bold),
                             new Rectangle(p.Box.X + S(16), p.Box.Y + S(11),
                                           p.Box.Width - S(32), S(24)),
                             Theme.Accent, Theme.Start);
-                        TextRenderer.DrawText(g, p.Note, Fonts.Get(8.5f * Zoom, FontStyle.Regular),
+                        TextRenderer.DrawText(g, p.Note, Fonts.Get(8.5f, FontStyle.Regular),
                             new Rectangle(p.Box.X + S(16), p.Box.Y + S(34),
                                           p.Box.Width - S(32), p.Box.Height - S(42)),
                             Theme.Faint, Theme.Wrap);
                         break;
 
                     default:
-                        TextRenderer.DrawText(g, p.Text, Fonts.Get(9.8f * Zoom, FontStyle.Regular),
+                        TextRenderer.DrawText(g, p.Text, Fonts.Get(9.8f, FontStyle.Regular),
                             p.Box, Theme.Muted, Theme.Wrap);
                         break;
                 }
@@ -2395,12 +2406,12 @@ namespace ElizaApp
             var line1 = new Rectangle(x, two ? (int)Math.Round(9 * Zoom) : 0,
                                       wide, two ? (int)Math.Round(24 * Zoom) : Height);
             TextRenderer.DrawText(g, Title,
-                Fonts.Get(10f * Zoom, two ? FontStyle.Bold : FontStyle.Regular),
+                Fonts.Get(10f, two ? FontStyle.Bold : FontStyle.Regular),
                 line1, Theme.Text,
                 Theme.Start | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
 
             if (two)
-                TextRenderer.DrawText(g, Note, Fonts.Get(9f * Zoom, FontStyle.Regular),
+                TextRenderer.DrawText(g, Note, Fonts.Get(9f, FontStyle.Regular),
                     new Rectangle(x, line1.Bottom - (int)Math.Round(2 * Zoom),
                                   wide, (int)Math.Round(22 * Zoom)),
                     Theme.Muted,
