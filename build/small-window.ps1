@@ -96,7 +96,15 @@ if (-not ('Small' -as [type])) {
 $out = Join-Path (Get-Location) $OutDir
 if (-not (Test-Path $out)) { New-Item -ItemType Directory -Force $out | Out-Null }
 
+# The settings file belongs to whoever uses the program. These scripts put it
+# into a known state and MUST put it back, including if something throws.
 $file = Join-Path $env:LOCALAPPDATA 'Eliza\settings.txt'
+$theirs = if (Test-Path $file) { [System.IO.File]::ReadAllBytes($file) } else { $null }
+$restore = {
+    if ($null -ne $theirs) { [System.IO.File]::WriteAllBytes($file, $theirs) }
+    elseif (Test-Path $file) { Remove-Item $file -Force -ErrorAction SilentlyContinue }
+}
+trap { & $restore; break }
 $parent = Split-Path $file
 if (-not (Test-Path $parent)) { New-Item -ItemType Directory -Force $parent | Out-Null }
 Set-Content -Path $file -Encoding utf8 -Value @(
@@ -155,3 +163,4 @@ if ($terminal) {
 
 Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
 Write-Output 'done'
+& $restore

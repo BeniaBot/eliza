@@ -1583,7 +1583,12 @@ namespace ElizaApp
                         by a text editor stayed on the disk and the program
                         said it was gone. */
                     var stayed = Settings.EraseEverything();
-                    settings.Erased = true;
+                    /*  Only if it actually went. Setting this when something
+                        stayed behind claimed a folder was gone that is still
+                        there, and then quietly suppressed every write to the
+                        settings file for the rest of the run -- including the
+                        reset button, which is the other thing on this page. */
+                    settings.Erased = stayed.Count == 0;
                     Rebuild();
                     MessageBox.Show(this,
                         stayed.Count == 0 ? Say.Erased

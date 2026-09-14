@@ -246,6 +246,15 @@ namespace ElizaApp
             not greet you the way a new one does. */
         public void ResetToDefaults()
         {
+            /*  And it clears Erased first.
+
+                Erased is there so that closing the program does not write
+                the settings file back seconds after somebody asked for it to
+                be gone. It was stopping this too -- and a reset that is
+                pressed, confirmed, and then silently does nothing is worse
+                than no reset at all. Pressing a button is an instruction, not
+                a side effect of closing a window. */
+            Erased = false;
             values.Clear();
             Save();
         }
@@ -509,7 +518,11 @@ namespace ElizaApp
             return values.TryGetValue(key, out v) && v.Length > 0 ? v : fallback;
         }
 
-        void Set(string key, string value) { values[key] = value ?? ""; }
+        /*  Changing a preference after an erase means the program is in
+            use again, so the file is allowed back. Without this, everything
+            touched after the erase button was kept in memory until the window
+            closed and then thrown away. */
+        void Set(string key, string value) { Erased = false; values[key] = value ?? ""; }
 
         int Number(string key, int fallback, int low, int high)
         {
