@@ -678,7 +678,7 @@ namespace ElizaApp
         The arrow follows the reading. In Hebrew, back is to the right. */
     class IconWidget : Widget
     {
-        public enum Mark { Back, Copy, Bin }
+        public enum Mark { Back, Copy, Bin, Folder, Carry }
 
         public Mark Glyph;
         public bool Mirror;
@@ -772,7 +772,40 @@ namespace ElizaApp
                     using (var path = RoundedF(front, u * 0.16f))
                     { g.FillPath(b2, path); g.DrawPath(ink, path); }
                 }
-                else
+                else if (Glyph == Mark.Folder)
+                {
+                    /*  A folder, half open. Two rectangles and a lid:
+                        the shape everybody reads as "this is on the disk",
+                        which is the whole of what the button says. */
+                    var body = new RectangleF(cx - u * 0.46f, cy - u * 0.26f,
+                                              u * 0.92f, u * 0.62f);
+                    g.DrawLines(ink, new[]
+                    {
+                        new PointF(cx - u * 0.46f, cy - u * 0.26f),
+                        new PointF(cx - u * 0.46f, cy - u * 0.44f),
+                        new PointF(cx - u * 0.10f, cy - u * 0.44f),
+                        new PointF(cx + u * 0.02f, cy - u * 0.26f),
+                    });
+                    using (var path = RoundedF(body, u * 0.10f)) g.DrawPath(ink, path);
+                }
+                else if (Glyph == Mark.Carry)
+                {
+                    /*  Carrying a conversation on: the same arrow the
+                        prompt uses at the foot of the screen, with a line
+                        behind it for what is already there. It follows the
+                        reading, like Back and for the same reason. */
+                    float dir = Mirror ? -1f : 1f;
+                    g.DrawLine(ink, cx - u * 0.46f * dir, cy - u * 0.34f,
+                                    cx - u * 0.46f * dir, cy + u * 0.34f);
+                    g.DrawLine(ink, cx - u * 0.30f * dir, cy, cx + u * 0.42f * dir, cy);
+                    g.DrawLines(ink, new[]
+                    {
+                        new PointF(cx + u * 0.10f * dir, cy - u * 0.30f),
+                        new PointF(cx + u * 0.42f * dir, cy),
+                        new PointF(cx + u * 0.10f * dir, cy + u * 0.30f),
+                    });
+                }
+                else if (Glyph == Mark.Bin)
                 {
                     // A bin: lid, body, and the two lines down the inside.
                     g.DrawLine(ink, cx - u * 0.46f, cy - u * 0.34f, cx + u * 0.46f, cy - u * 0.34f);

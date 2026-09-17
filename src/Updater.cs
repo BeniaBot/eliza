@@ -28,7 +28,7 @@ namespace ElizaApp
         public static volatile string Where;      // the page to open
         public static volatile string Trouble;    // why it could not be asked
 
-        public const string Version = "1.0";
+        public const string Version = "1.1";
 
         /*  Ask, on a thread of its own.
 

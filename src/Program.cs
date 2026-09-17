@@ -55,10 +55,29 @@ namespace ElizaApp
         static string[] Embedded { get { return Settings.Shipped; } }
         static string[] Retired { get { return Settings.Retired; } }
 
+        /*  A conversation named on the command line, waiting for a window
+            to show it in. The shell picks it up once it is on its feet. */
+        public static string Opening;
+
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             try { SetProcessDPIAware(); } catch { }
+
+            /*  One argument, and it has to be a file that is there. This is
+                what makes "open with" work without writing a file type into
+                somebody’s registry, which a program that runs off a stick
+                should not be doing. Anything else is ignored in silence:
+                a program started with an argument it does not understand
+                should still be the program. */
+            try
+            {
+                if (args != null && args.Length == 1 &&
+                    args[0].EndsWith(".txt", StringComparison.OrdinalIgnoreCase) &&
+                    File.Exists(args[0]))
+                    Opening = args[0];
+            }
+            catch { }
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);

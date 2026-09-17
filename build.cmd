@@ -59,7 +59,7 @@ echo [5/5] building ELIZA.exe
     -resource:scripts\tzul.he.txt,tzul.he.txt ^
     src\Eliza.cs src\CaseTable.cs src\Settings.cs src\Shell.cs ^
     src\Ui.cs src\AboutText.cs src\Widgets.cs src\Museum.cs ^
-    src\Scenes.cs src\Updater.cs src\Program.cs || exit /b 1
+    src\Scenes.cs src\Updater.cs src\Resume.cs src\Program.cs || exit /b 1
 
 echo.
 echo done: dist\ELIZA.exe

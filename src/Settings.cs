@@ -729,6 +729,43 @@ namespace ElizaApp
         }
         public static string Folder2 { get { return Pick("תיקיית התסריטים", "Script folder"); } }
 
+        // ---- carrying a conversation on ---------------------------------
+
+        public static string CarryOn
+        { get { return Pick("המשך השיחה", "Carry on"); } }
+        public static string OpenFile
+        { get { return Pick("פתיחת שיחה מקובץ", "Open a conversation"); } }
+        public static string OpenTranscriptFolder
+        { get { return Pick("תיקיית התמלילים", "Transcript folder"); } }
+        public static string TextFiles
+        { get { return Pick("קבצי טקסט", "Text files"); } }
+        public static string NoSuchTalk
+        {
+            get
+            {
+                return Pick("לא ניתן היה לקרוא את הקובץ.",
+                            "The file could not be read.");
+            }
+        }
+        public static string NothingToCarry
+        {
+            get
+            {
+                return Pick(
+                    "אין בקובץ הזה שיחה להמשיך. שורה שמתחילה ב-· היא מה שאמרת, וכל שורה אחרת היא מה שהיא ענתה.",
+                    "There is no conversation in that file. A line beginning · is something you said; every other line is something she said.");
+            }
+        }
+        public static string NoSuchScript
+        {
+            get
+            {
+                return Pick(
+                    "השיחה הזאת נוהלה עם תסריט שאינו נמצא כאן:",
+                    "This conversation was held with a script that is not here:");
+            }
+        }
+
         public static string Language { get { return Pick("שפת הממשק", "Interface language"); } }
         public static string Typing { get { return Pick("מהירות הקלדה", "Typing speed"); } }
         public static string Size { get { return Pick("גודל הטקסט", "Text size"); } }

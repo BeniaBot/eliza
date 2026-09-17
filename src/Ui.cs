@@ -426,6 +426,24 @@ namespace ElizaApp
             Invalidate();
         }
 
+        /*  A whole conversation at once, read back off the disk.
+
+            Not AddInstant in a loop. Every AddInstant rewraps every line that
+            is already there, so putting a file up one line at a time is work
+            that squares with the length of the file: unnoticeable at twenty
+            lines and a visible pause at several hundred, which is exactly the
+            size a conversation somebody has been carrying on for a week
+            reaches. Added, then wrapped once. */
+        public void Restore(IList<Resumed.Line> said)
+        {
+            announceDue = true;
+            foreach (var l in said)
+                lines.Add(new ScreenLine { Text = l.Text, Style = l.Style });
+            scrollOffset = 0;
+            Rewrap();
+            Invalidate();
+        }
+
         public void AddTyped(string text, int style)
         {
             pending.Enqueue(new ScreenLine { Text = text, Style = style });
@@ -1188,8 +1206,27 @@ namespace ElizaApp
             StartConversation();
         }
 
+        /*  A conversation read off the disk, waiting to be carried on.
+
+            Set between building the window and showing it. It is consumed the
+            first time a script is loaded and then forgotten, so F2 and F5
+            start a new conversation the way they always did. */
+        public Resumed Resuming;
+
+        /*  And the file it came out of, when that file is one of ours, so
+            the conversation is written back where it was instead of
+            leaving a second copy in the list with the same opening line. */
+        public string ResumedFrom;
+
         void StartConversation()
         {
+            if (Resuming != null && !Resuming.IsEmpty)
+            {
+                var carry = Resuming;
+                Resuming = null;
+                CarryOn(carry);
+                return;
+            }
             KeepWhatIsOnTheScreen();
             engine.Reset();
             history.Clear();
@@ -1217,6 +1254,45 @@ namespace ElizaApp
                 opening line and the rotation move together. */
             ApplyOrder();
             Speak(engine.GreetingFor(settings.Visits - 1), 3);
+            Invalidate();
+        }
+
+        /*  Put a conversation back up and carry on from the end of it.
+
+            Three things happen here and the order of them is the whole job.
+            The file goes onto the screen exactly as it is -- if somebody edited
+            what she said, those are the words that appear, and she goes on
+            from them as though she had said them. Then the rotations are
+            entered, as they are at the start of any conversation. Then the
+            person's own lines are handed to the engine, one after another, and
+            the answers are thrown away: nothing is spoken, nothing is drawn,
+            and the only thing being rebuilt is the four counters inside her.
+
+            What does NOT happen here is as much of the point. No banner: the
+            file has its own, and a second one under it would be a new
+            conversation, which this is not. No greeting: she said it last time
+            and it is on the screen. And no visit is counted -- coming back to
+            something is not coming in. */
+        void CarryOn(Resumed carry)
+        {
+            KeepWhatIsOnTheScreen();
+            engine.Reset();
+            history.Clear();
+            historyAt = -1;
+            halfWritten = "";
+            screen.Clear();
+            screen.Restore(carry.Lines);
+
+            ApplyOrder();
+            foreach (string said in carry.Typed)
+            {
+                FollowTheSpeaker(said);
+                engine.Respond(said);
+            }
+
+            // The arrow keys walk back through what you typed, and what you
+            // typed last week is still what you typed.
+            history.AddRange(carry.Typed);
             Invalidate();
         }
 
@@ -1315,6 +1391,25 @@ namespace ElizaApp
                 אני בת and then אני בן is correcting the program, and a program
                 that could only be corrected once would be worse than one that
                 never listened. */
+            FollowTheSpeaker(text);
+
+            string reply = engine.Respond(text);
+            if (traceMode)
+                foreach (var t in engine.Trace) screen.AddInstant("    " + t, 2, true);
+
+            Speak(reply, 0);
+        }
+
+        /*  Hand the rest of the conversation to the script written for whoever
+            is actually typing.
+
+            Lifted out of Ask so that a conversation being replayed off the
+            disk goes through the same door. A woman who gave herself away on
+            her fourth line last week must still be answered as a woman when
+            she comes back to it, and the only way to be sure of that is for
+            both paths to be this one. */
+        void FollowTheSpeaker(string text)
+        {
             if (current.Feminine != null && settings.Address == "auto")
             {
                 int sounds = engine.SpeakerSounds(text);
@@ -1337,12 +1432,6 @@ namespace ElizaApp
                     engine.CarryOn(was);
                 }
             }
-
-            string reply = engine.Respond(text);
-            if (traceMode)
-                foreach (var t in engine.Trace) screen.AddInstant("    " + t, 2, true);
-
-            Speak(reply, 0);
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)

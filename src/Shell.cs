@@ -232,7 +232,7 @@ namespace ElizaApp
         readonly List<Hotspot> hotspots = new List<Hotspot>();
 
         Page page = Page.Home;
-        string reading = "", readingName = "";
+        string reading = "", readingName = "", readingPath = "";
 
         float scale = 1f;
         Rectangle closeButton, minButton, maxButton;
@@ -922,6 +922,25 @@ namespace ElizaApp
                 managed to change page without them. */
             PlaceHost();
             DressNav();
+            AcceptDroppedFiles();
+
+            /*  A conversation handed in on the command line. That is how
+                "open with" reaches a program that does not register a file
+                type on the machine -- which a program carried on a stick
+                has no business doing. Shown after the window is up, so a
+                file that cannot be read is complained about somewhere a
+                person can see it. */
+            if (Program.Opening != null)
+            {
+                string path = Program.Opening;
+                Program.Opening = null;
+                /*  On Shown and not from here. This runs inside the
+                    constructor, where the window has no handle yet, and
+                    BeginInvoke on a control without one throws -- which is a
+                    program that opens a conversation from a menu but not from
+                    the command line, and says nothing about why. */
+                Shown += (s2, e2) => CarryOnFile(path);
+            }
 
             // And, if it was asked for, the one question this program puts to
             // the network. It answers on its own thread; nothing waits for it.
@@ -1213,6 +1232,25 @@ namespace ElizaApp
             var title = Title(Say.Transcripts, S(22));
 
             var files = TranscriptFiles();
+
+            /*  A conversation that came from somewhere else.
+
+                It belongs on this page and nowhere else: the opening
+                screen is for choosing who to talk to, and a file somebody
+                sent you is a conversation, which is what this page is
+                about. Two more ways in carry no furniture at all -- a file
+                dropped on the window, and a path on the command line, which
+                is what makes "open with" work without registering a file
+                type on somebody else’s machine. */
+            var fromFile = new IconWidget { Glyph = IconWidget.Mark.Carry, Mirror = Say.Hebrew };
+            fromFile.Announce(Say.OpenFile, AccessibleRole.PushButton, "");
+            fromFile.Pressed += (s2, e2) => AskForAFile();
+
+            // And the folder itself, for anybody who wants to send one.
+            var folder = new IconWidget { Glyph = IconWidget.Mark.Folder };
+            folder.Announce(Say.OpenTranscriptFolder, AccessibleRole.PushButton, "");
+            folder.Pressed += (s2, e2) => OpenTranscriptFolder();
+
             if (files.Length > 0)
             {
                 /*  There was no way to empty this at all. Each conversation
@@ -1222,8 +1260,9 @@ namespace ElizaApp
                 var all = new IconWidget { Glyph = IconWidget.Mark.Bin };
                 all.Announce(Say.DeleteAll, AccessibleRole.PushButton, "");
                 all.Pressed += (s2, e2) => BinAll(files);
-                Beside(title, all);
+                Beside(title, fromFile, folder, all);
             }
+            else Beside(title, fromFile, folder);
             if (files.Length == 0)
             {
                 var none = new Label
@@ -1412,7 +1451,16 @@ namespace ElizaApp
                 catch { }
             };
 
-            Beside(title, back, copy);
+            /*  And carry it on. The conversation is in front of you and
+                the cursor goes at the end of it -- which is the whole
+                gesture, and why it belongs here rather than on a row in a
+                list, where it would be a button beside something whose
+                only purpose is to be opened. */
+            var carry = new IconWidget { Glyph = IconWidget.Mark.Carry, Mirror = Say.Hebrew };
+            carry.Announce(Say.CarryOn, AccessibleRole.PushButton, "");
+            carry.Pressed += (s2, e2) => CarryOn(reading, readingPath);
+
+            Beside(title, back, copy, carry);
 
             /*  The conversation on a card, her turns and yours told apart.
 
@@ -1818,7 +1866,9 @@ namespace ElizaApp
 
         // ---- doing things --------------------------------------------------
 
-        void Converse(int index)
+        void Converse(int index) { Converse(index, null); }
+
+        void Converse(int index, Resumed carry)
         {
             settings.Script = scripts[index].Name;
             settings.Save();
@@ -1828,8 +1878,47 @@ namespace ElizaApp
             {
                 using (var terminal = new MainForm(scripts, index, settings))
                 {
+                    // Read before the window is shown; consumed when the
+                    // script loads, and gone by the time F2 or F5 can ask
+                    // for a conversation of their own.
+                    terminal.Resuming = carry;
+                    /*  And where it came from, so that carrying a
+                        conversation on writes it back to its own file
+                        instead of leaving a second copy in the list with
+                        the same first line and a newer date. Only for a
+                        file that is already one of these: one a friend sent
+                        lands in the folder as a new conversation, because
+                        it is new here. */
+                    if (carry != null) terminal.ResumedFrom = MineToKeep(carry.Path);
+                    /*  The room goes back up while the conversation is still
+                        standing in front of it.
+
+                        Putting it back after the conversation had gone left a
+                        quarter of a second with neither window on the screen,
+                        and a hidden window is not a black rectangle -- it is
+                        nothing, and what is behind it shows. Measured against
+                        a flat-coloured backdrop, photographing the screen
+                        itself every 120ms: two frames out of seventeen, the
+                        whole of the window, the backdrop straight through.
+                        Somebody saw his file explorer that way.
+
+                        Shown and painted from here, the room is already whole
+                        underneath when the conversation closes, so there is no
+                        frame with nothing in it. Show() does not steal the
+                        focus from the dialog, and the work is the same work --
+                        only earlier. */
+                    terminal.FormClosing += (s2, e2) =>
+                    {
+                        // The language may have been changed inside the terminal.
+                        Say.Hebrew = settings.Hebrew;
+                        Theme.Mirrored = Say.Hebrew;
+                        Rebuild();
+                        Show();
+                        Redraw();
+                    };
                     terminal.ShowDialog();
-                    if (settings.KeepTranscripts) Keep(terminal.Transcript);
+                    if (settings.KeepTranscripts)
+                        Keep(terminal.Transcript, terminal.ResumedFrom);
                 }
             }
             catch (Exception ex)
@@ -2007,7 +2096,26 @@ namespace ElizaApp
                 RDW_ALLCHILDREN | RDW_UPDATENOW);
         }
 
-        void Keep(string transcript)
+        /*  Is this one of ours? A path inside the transcripts folder is
+            written back where it was; anything else is not touched. */
+        static string MineToKeep(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return null;
+            try
+            {
+                string home = System.IO.Path.GetFullPath(Settings.TranscriptFolder);
+                string full = System.IO.Path.GetFullPath(path);
+                char slash = System.IO.Path.DirectorySeparatorChar;
+                return System.IO.Path.GetDirectoryName(full).TrimEnd(slash)
+                       .Equals(home.TrimEnd(slash), StringComparison.OrdinalIgnoreCase)
+                       ? full : null;
+            }
+            catch { return null; }
+        }
+
+        void Keep(string transcript) { Keep(transcript, null); }
+
+        void Keep(string transcript, string writeBackTo)
         {
             // Only what someone actually said is worth keeping.
             if (transcript == null) return;
@@ -2027,7 +2135,8 @@ namespace ElizaApp
             try
             {
                 Directory.CreateDirectory(Settings.TranscriptFolder);
-                File.WriteAllText(System.IO.Path.Combine(Settings.TranscriptFolder, name),
+                File.WriteAllText(writeBackTo ??
+                                  System.IO.Path.Combine(Settings.TranscriptFolder, name),
                                   transcript, new UTF8Encoding(true));
             }
             catch (Exception ex)
@@ -2097,9 +2206,127 @@ namespace ElizaApp
             try { reading = File.ReadAllText(path, Encoding.UTF8); }
             catch { reading = ""; }
             readingName = Describe(path);
+            // Kept, because a conversation you are reading is one you may
+            // want to carry on, and carrying it on writes it back here.
+            readingPath = path;
             startAtTop = true;
             page = Page.Reading;
             Rebuild();
+        }
+
+        /*  The folder the conversations are kept in, in Explorer.
+
+            There was a way to reach the scripts and no way to reach these,
+            and a conversation you cannot find is a conversation you cannot
+            send to anybody. */
+        void OpenTranscriptFolder()
+        {
+            try
+            {
+                Directory.CreateDirectory(Settings.TranscriptFolder);
+                System.Diagnostics.Process.Start(
+                    "explorer.exe", "\"" + Settings.TranscriptFolder + "\"");
+            }
+            catch { }
+        }
+
+        /*  A conversation from anywhere: asked for, dropped on the window,
+            or handed in on the command line. */
+        void AskForAFile()
+        {
+            using (var dlg = new OpenFileDialog())
+            {
+                dlg.Filter = Say.TextFiles + "|*.txt";
+                dlg.Title = Say.OpenFile;
+                try
+                {
+                    if (Directory.Exists(Settings.TranscriptFolder))
+                        dlg.InitialDirectory = Settings.TranscriptFolder;
+                }
+                catch { }
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                CarryOnFile(dlg.FileName);
+            }
+        }
+
+        public void CarryOnFile(string path)
+        {
+            string text;
+            try { text = File.ReadAllText(path, Encoding.UTF8); }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, Say.NoSuchTalk + Environment.NewLine +
+                    Environment.NewLine + ex.Message, Say.OpenFile,
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning,
+                    MessageBoxDefaultButton.Button1, Reading(Say.Hebrew));
+                return;
+            }
+            CarryOn(text, path);
+        }
+
+        /*  Which script it was.
+
+            The banner carries the name, so a conversation that arrives from
+            somebody else opens in the character it was held with -- a
+            conversation with the mashgiach must not be carried on by the
+            psychologist. If that name is not among the scripts on THIS
+            machine, say so and stop, rather than answering in a voice that
+            was never in the file. A file with no banner at all -- one
+            somebody wrote by hand -- is carried on with whatever is chosen
+            here, which is the only sensible guess there is. */
+        void CarryOn(string text) { CarryOn(text, ""); }
+
+        void CarryOn(string text, string path)
+        {
+            var carry = Resumed.Read(text);
+            carry.Path = path ?? "";
+            if (carry.IsEmpty)
+            {
+                MessageBox.Show(this, Say.NothingToCarry, Say.CarryOn,
+                    MessageBoxButtons.OK, MessageBoxIcon.Information,
+                    MessageBoxDefaultButton.Button1, Reading(Say.Hebrew));
+                return;
+            }
+
+            int index = -1;
+            if (carry.ScriptName.Length > 0)
+            {
+                index = scripts.FindIndex(x => x.Name == carry.ScriptName);
+                if (index < 0)
+                {
+                    MessageBox.Show(this,
+                        Say.NoSuchScript + Environment.NewLine +
+                        Environment.NewLine + carry.ScriptName,
+                        Say.CarryOn, MessageBoxButtons.OK, MessageBoxIcon.Warning,
+                        MessageBoxDefaultButton.Button1, Reading(Say.Hebrew));
+                    return;
+                }
+            }
+            /*  A file with no banner -- one somebody wrote by hand, which is
+                the whole point of the format being one line to explain -- says
+                nothing about who it was held with. The language it is written
+                in says a great deal, though, and a Hebrew conversation carried
+                on by the English script of 1966 is not a near miss: the window
+                turns round, the letters run the other way, and she answers in
+                capitals. So: whatever is chosen here if it reads the same way
+                as the file, and otherwise the first script that does. */
+            if (index < 0)
+            {
+                bool hebrew = MostlyHebrew(text);
+                index = scripts.FindIndex(x => x.Name == settings.Script);
+                if (index < 0 || scripts[index].RightToLeft != hebrew)
+                    index = scripts.FindIndex(x => x.RightToLeft == hebrew);
+                if (index < 0) index = 0;
+            }
+
+            /*  Back to the list afterwards, not to the page that was being
+                read. Coming back to Reading would rebuild it from the text
+                held before the conversation, so the turns just added would
+                be missing from it -- and somebody would reasonably conclude
+                that nothing had been saved. */
+            startAtTop = true;
+            page = Page.Transcripts;
+            Converse(index, carry);
         }
 
         void OpenScriptFolder()
@@ -2111,6 +2338,40 @@ namespace ElizaApp
                     System.Diagnostics.Process.Start("explorer.exe", "\"" + folder + "\"");
             }
             catch { }
+        }
+
+        /*  A conversation dropped on the window.
+
+            The quietest way in there is: it costs no pixel of the page,
+            and it is what somebody does with a file a friend has just
+            sent them. Only a .txt, only one, and the same road as the
+            button on the transcripts page from there on. */
+        void AcceptDroppedFiles()
+        {
+            AllowDrop = true;
+            DragEnter += (s2, e2) =>
+            {
+                e2.Effect = DroppedTalk(e2) == null
+                    ? DragDropEffects.None : DragDropEffects.Copy;
+            };
+            DragDrop += (s2, e2) =>
+            {
+                string path = DroppedTalk(e2);
+                if (path != null) CarryOnFile(path);
+            };
+        }
+
+        static string DroppedTalk(DragEventArgs e)
+        {
+            try
+            {
+                if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return null;
+                var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if (files == null || files.Length != 1) return null;
+                return files[0].EndsWith(".txt", StringComparison.OrdinalIgnoreCase)
+                       && File.Exists(files[0]) ? files[0] : null;
+            }
+            catch { return null; }
         }
 
         // ---- mouse, keys, window -------------------------------------------
