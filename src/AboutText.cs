@@ -716,6 +716,14 @@ namespace ElizaApp
             yield return "@https://mada.org.il/media/r4bnzlxs/%D7%A7%D7%98%D7%9C%D7%95%D7%92-%D7%AA%D7%A2%D7%A8%D7%95%D7%9B%D7%94-%D7%A7%D7%90%D7%A4%D7%A6%D7%94.pdf|" +
                          "קטלוג תערוכת קאפצ\'ה|" +
                          "עמוד 26, \"הכירו את אלייזה\", הוא שלט התצוגה המלא, עם תצלום של העמדה עצמה.";
+
+            // Everything above is a source about ELIZA. This one is about this program: where it
+            // was announced, what people asked, and what was answered. It goes last because it is
+            // the only line here that points at us rather than at the history.
+            yield return "# התוכנה הזאת";
+            yield return "@https://bina.top/topic/229/|" +
+                         "הדיון על התוכנה בבינה|" +
+                         "מידע נוסף, שאלות ותשובות, והמקום לומר מה חסר או מה לא עובד.";
         }
 
         // ================================================================ en
@@ -1279,6 +1287,12 @@ namespace ElizaApp
             yield return "@https://www.nathanzeldes.com/wp-content/uploads/2012/11/CAPTCHA-Curator-Take.pdf|" +
                          "CAPTCHA: the curator's account|" +
                          "Nathan Zeldes on the exhibition ELIZA was shown in, and on how it was designed.";
+
+            // The one entry here that points at this program rather than at the history.
+            yield return "# This program";
+            yield return "@https://bina.top/topic/229/|" +
+                         "The thread about it, in Hebrew|" +
+                         "More about this build, questions and answers, and where to say what is missing or broken.";
         }
 
     }
