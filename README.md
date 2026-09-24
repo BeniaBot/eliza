@@ -411,12 +411,11 @@ scripts/dayan.he.txt     הדיין
 scripts/tzul.he.txt      הצו״ל
 
 LICENSE                  רישיון MIT
-
+```
 `src/Conversations.cs` נוצר מתוך ערכת הבדיקות של מימוש הייחוס
 ([anthay/ELIZA](https://github.com/anthay/ELIZA), רישיון MIT) בידי
 `build/extract_tests.py`. המימוש עצמו אינו נשמר כאן; מי שרוצה ליצור את
 הקובץ מחדש מוריד אותו משם.
-```
 
 בדיקת תסריט — מה יש בו, ומה לא בסדר בו:
 
